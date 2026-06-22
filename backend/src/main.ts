@@ -22,8 +22,36 @@ async function bootstrap() {
 
   // CORS config
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000', 'https://inventory-management-khaki-iota.vercel.app',
-    ],
+    origin: (origin, callback) => {
+      // If no origin (like mobile apps, curl, postman, server-to-server), allow it
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+      
+      const allowedOrigins = [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'https://inventory-management-khaki-iota.vercel.app',
+      ];
+      
+      // Parse custom allowed origins from env if configured
+      if (process.env.ALLOWED_ORIGINS) {
+        const envOrigins = process.env.ALLOWED_ORIGINS.split(',').map((o) => o.trim());
+        allowedOrigins.push(...envOrigins);
+      }
+      
+      const isAllowed = 
+        allowedOrigins.includes(origin) ||
+        origin.endsWith('.vercel.app') || // Allows all Vercel previews/branches
+        /^http:\/\/localhost:\d+$/.test(origin); // Allows any local development port
+        
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        callback(null, false);
+      }
+    },
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     allowedHeaders: 'Content-Type, Accept, Authorization',
