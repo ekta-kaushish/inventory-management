@@ -31,9 +31,9 @@ const productFormSchema = z.object({
   sku: z.string().min(3, { message: 'SKU must be at least 3 characters' }),
   company: z.string().min(1, { message: 'Company is required' }),
   category: z.string().min(1, { message: 'Category is required' }),
-  purchasePrice: z.preprocess((val) => Number(val), z.number().min(0, { message: 'Cannot be negative' })),
-  sellingPrice: z.preprocess((val) => Number(val), z.number().min(0, { message: 'Cannot be negative' })),
-  minimumStockLevel: z.preprocess((val) => Number(val), z.number().min(0, { message: 'Cannot be negative' })),
+  purchasePrice: z.number().min(0, { message: 'Cannot be negative' }),
+  sellingPrice: z.number().min(0, { message: 'Cannot be negative' }),
+  minimumStockLevel: z.number().min(0, { message: 'Cannot be negative' }),
   description: z.string().optional(),
 });
 
@@ -445,7 +445,7 @@ export default function ProductsPage() {
                     <Input
                       type="number"
                       className="border-slate-700 bg-slate-950 text-white"
-                      {...register('minimumStockLevel')}
+                      {...register('minimumStockLevel', { valueAsNumber: true })}
                     />
                     {errors.minimumStockLevel && <p className="text-xs text-red-400">{errors.minimumStockLevel.message}</p>}
                   </div>
@@ -456,7 +456,7 @@ export default function ProductsPage() {
                       type="number"
                       step="0.01"
                       className="border-slate-700 bg-slate-950 text-white"
-                      {...register('purchasePrice')}
+                      {...register('purchasePrice', { valueAsNumber: true })}
                     />
                     {errors.purchasePrice && <p className="text-xs text-red-400">{errors.purchasePrice.message}</p>}
                   </div>
@@ -467,7 +467,7 @@ export default function ProductsPage() {
                       type="number"
                       step="0.01"
                       className="border-slate-700 bg-slate-950 text-white"
-                      {...register('sellingPrice')}
+                      {...register('sellingPrice', { valueAsNumber: true })}
                     />
                     {errors.sellingPrice && <p className="text-xs text-red-400">{errors.sellingPrice.message}</p>}
                   </div>
