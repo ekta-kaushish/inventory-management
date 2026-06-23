@@ -1,45 +1,63 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import DashboardShell from '@/components/DashboardShell';
 import api from '@/lib/api';
 import { Product, PaginatedResponse } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 import { showToast } from '@/store/toastStore';
 import { Button, Card, CardContent, CardHeader, CardTitle, CardDescription, Input, Label, Select, Badge } from '@/components/ui';
-import { ArrowDownRight, ArrowUpRight, Boxes, AlertCircle } from 'lucide-react';
+import { ArrowDownRight, ArrowUpRight, Boxes, AlertCircle, Search } from 'lucide-react';
 
 export default function StockActionsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loadingProducts, setLoadingProducts] = useState(true);
+  // Autocomplete states
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Product[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Form states
-  const [selectedProductId, setSelectedProductId] = useState('');
+  const selectedProductId = selectedProduct?._id || '';
   const [actionType, setActionType] = useState<'IN' | 'OUT'>('IN');
   const [quantity, setQuantity] = useState<number>(1);
   const [remarks, setRemarks] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
+  // Initial load / search query debounce
   useEffect(() => {
-    fetchProducts();
+    const delayDebounceFn = setTimeout(() => {
+      searchProducts();
+    }, 300);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
+
+  // Click outside listener to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const fetchProducts = async () => {
-    setLoadingProducts(true);
+  const searchProducts = async () => {
+    setSearching(true);
     try {
-      // Get a large list to select from
       const response = await api.get<PaginatedResponse<Product>>('/products', {
-        params: { limit: 100 },
+        params: { search: searchQuery || undefined, limit: 10 },
       });
-      setProducts(response.data.items);
+      setSearchResults(response.data.items);
     } catch (e) {
-      showToast.error('Failed to load products list for dropdown');
+      console.error('Failed to search products', e);
     } finally {
-      setLoadingProducts(false);
+      setSearching(false);
     }
   };
-
-  const selectedProduct = products.find((p) => p._id === selectedProductId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,8 +89,11 @@ export default function StockActionsPage() {
       // Reset form controls
       setQuantity(1);
       setRemarks('');
-      // Reload products list to reflect new quantities
-      fetchProducts();
+      // Reload product data to reflect new quantities
+      if (selectedProductId) {
+        const prodRes = await api.get<Product>(`/products/${selectedProductId}`);
+        setSelectedProduct(prodRes.data);
+      }
     } catch (error: any) {
       const errMsg = error.response?.data?.message || 'Failed to update stock';
       showToast.error(errMsg);
@@ -105,24 +126,66 @@ export default function StockActionsPage() {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Product Selector */}
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 relative" ref={dropdownRef}>
                   <Label className="text-slate-200">Select Product</Label>
-                  {loadingProducts ? (
-                    <div className="h-10 w-full rounded-lg border border-slate-800 bg-slate-950 flex items-center justify-center text-xs text-slate-500 animate-pulse">
-                      Loading product catalog...
+                  <button
+                    type="button"
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    disabled={submitting}
+                    className="flex h-10 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-left text-white items-center justify-between focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    <span className="truncate mr-2">
+                      {selectedProduct
+                        ? `${selectedProduct.productName} (${selectedProduct.sku}) - Qty: ${selectedProduct.quantity}`
+                        : '-- Choose a product from catalog --'}
+                    </span>
+                    <span className="text-slate-500 text-[10px]">▼</span>
+                  </button>
+
+                  {isDropdownOpen && (
+                    <div className="absolute z-50 mt-1 w-full rounded-lg border border-slate-800 bg-slate-950 p-2 shadow-2xl animate-in fade-in slide-in-from-top-1 duration-150">
+                      <div className="relative mb-2">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-2.5 text-slate-500">
+                          <Search className="h-3.5 w-3.5" />
+                        </span>
+                        <Input
+                          type="text"
+                          placeholder="Search product by name or SKU..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-8 h-9 border-slate-800 bg-slate-900 text-white placeholder-slate-500 text-xs focus:ring-indigo-500"
+                          autoFocus
+                        />
+                      </div>
+                      <div className="max-h-48 overflow-y-auto space-y-0.5 text-xs text-slate-300">
+                        {searching ? (
+                          <div className="py-4 text-center text-slate-500">Searching catalog...</div>
+                        ) : searchResults.length === 0 ? (
+                          <div className="py-4 text-center text-slate-500">No products found</div>
+                        ) : (
+                          searchResults.map((prod) => (
+                            <button
+                              key={prod._id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedProduct(prod);
+                                setIsDropdownOpen(false);
+                                setSearchQuery('');
+                              }}
+                              className="w-full text-left px-3 py-2 rounded hover:bg-indigo-600/20 hover:text-indigo-400 transition flex justify-between items-center cursor-pointer"
+                            >
+                              <div className="truncate mr-2">
+                                <span className="font-semibold block truncate">{prod.productName}</span>
+                                <span className="text-slate-500 font-mono text-[10px]">{prod.sku}</span>
+                              </div>
+                              <Badge variant={prod.quantity > prod.minimumStockLevel ? 'success' : prod.quantity === 0 ? 'danger' : 'warning'} className="text-[10px] shrink-0">
+                                Qty: {prod.quantity}
+                              </Badge>
+                            </button>
+                          ))
+                        )}
+                      </div>
                     </div>
-                  ) : (
-                    <Select
-                      options={products.map((p) => ({
-                        value: p._id,
-                        label: `${p.productName} (${p.sku}) - Qty: ${p.quantity}`,
-                      }))}
-                      placeholder="-- Choose a product from catalog --"
-                      value={selectedProductId}
-                      onChange={(e) => setSelectedProductId(e.target.value)}
-                      className="border-slate-700 bg-slate-950 text-white"
-                      disabled={submitting}
-                    />
                   )}
                 </div>
 

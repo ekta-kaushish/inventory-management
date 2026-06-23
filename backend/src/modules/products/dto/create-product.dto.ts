@@ -34,12 +34,6 @@ export class CreateProductDto {
   @Min(0, { message: 'Purchase price cannot be negative' })
   purchasePrice!: number;
 
-  @ApiProperty({ example: 1199, description: 'Sale price for customers' })
-  @IsNotEmpty({ message: 'Selling price is required' })
-  @IsNumber()
-  @Min(0, { message: 'Selling price cannot be negative' })
-  sellingPrice!: number;
-
   @ApiProperty({ example: 5, description: 'Minimum inventory level before warning' })
   @IsNotEmpty({ message: 'Minimum stock level is required' })
   @IsNumber()

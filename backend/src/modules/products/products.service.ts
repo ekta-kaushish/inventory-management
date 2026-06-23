@@ -63,7 +63,6 @@ export class ProductsService {
     if (updateProductDto.company !== undefined) product.company = updateProductDto.company;
     if (updateProductDto.category !== undefined) product.category = updateProductDto.category;
     if (updateProductDto.purchasePrice !== undefined) product.purchasePrice = updateProductDto.purchasePrice;
-    if (updateProductDto.sellingPrice !== undefined) product.sellingPrice = updateProductDto.sellingPrice;
     if (updateProductDto.description !== undefined) product.description = updateProductDto.description;
 
     if (updateProductDto.quantity !== undefined) {
@@ -116,13 +115,15 @@ export class ProductsService {
     }
 
     const skip = (page - 1) * limit;
-    const totalItems = await this.productModel.countDocuments(query).exec();
-    const items = await this.productModel
-      .find(query)
-      .sort({ updatedAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .exec();
+    const [totalItems, items] = await Promise.all([
+      this.productModel.countDocuments(query).exec(),
+      this.productModel
+        .find(query)
+        .sort({ updatedAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+    ]);
 
     const totalPages = Math.ceil(totalItems / limit);
 

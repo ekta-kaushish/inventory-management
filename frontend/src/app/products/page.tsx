@@ -32,7 +32,6 @@ const productFormSchema = z.object({
   company: z.string().min(1, { message: 'Company is required' }),
   category: z.string().min(1, { message: 'Category is required' }),
   purchasePrice: z.number().min(0, { message: 'Cannot be negative' }),
-  sellingPrice: z.number().min(0, { message: 'Cannot be negative' }),
   minimumStockLevel: z.number().min(0, { message: 'Cannot be negative' }),
   description: z.string().optional(),
 });
@@ -49,11 +48,22 @@ export default function ProductsPage() {
   const [categories, setCategories] = useState<string[]>([]);
 
   // Filter query states
+  const [searchInput, setSearchInput] = useState('');
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const limit = 8;
+
+  // Debounce search input to prevent query spamming
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setSearch(searchInput);
+      setCurrentPage(1);
+    }, 300);
+
+    return () => clearTimeout(handler);
+  }, [searchInput]);
 
   // Modal control states
   const [formModalOpen, setFormModalOpen] = useState(false);
@@ -115,7 +125,6 @@ export default function ProductsPage() {
       company: '',
       category: '',
       purchasePrice: 0,
-      sellingPrice: 0,
       minimumStockLevel: 5,
       description: '',
     });
@@ -129,7 +138,6 @@ export default function ProductsPage() {
     setValue('company', product.company);
     setValue('category', product.category);
     setValue('purchasePrice', product.purchasePrice);
-    setValue('sellingPrice', product.sellingPrice);
     setValue('minimumStockLevel', product.minimumStockLevel);
     setValue('description', product.description || '');
     setFormModalOpen(true);
@@ -151,13 +159,22 @@ export default function ProductsPage() {
         // Edit Mode
         await api.patch(`/products/${editingProduct._id}`, fields);
         showToast.success('Product updated successfully');
+        setFormModalOpen(false);
+        reset();
       } else {
         // Create Mode
         await api.post('/products', fields);
         showToast.success('Product created successfully');
+        reset({
+          productName: '',
+          sku: '',
+          company: '',
+          category: '',
+          purchasePrice: 0,
+          minimumStockLevel: 5,
+          description: '',
+        });
       }
-      setFormModalOpen(false);
-      reset();
       fetchProducts();
       fetchCategories();
     } catch (e: any) {
@@ -210,10 +227,9 @@ export default function ProductsPage() {
               <Input
                 type="text"
                 placeholder="Search products by SKU, name, or company..."
-                value={search}
+                value={searchInput}
                 onChange={(e) => {
-                  setSearch(e.target.value);
-                  setCurrentPage(1);
+                  setSearchInput(e.target.value);
                 }}
                 className="pl-10 border-slate-700 bg-slate-950 text-white placeholder-slate-500 focus-visible:ring-indigo-500 focus-visible:ring-offset-slate-900"
               />
@@ -277,7 +293,7 @@ export default function ProductsPage() {
                     <th className="py-4 px-4">Category</th>
                     <th className="py-4 px-4 text-right">Qty</th>
                     <th className="py-4 px-4 text-right">Cost Price</th>
-                    <th className="py-4 px-4 text-right">Sell Price</th>
+                    <th className="py-4 px-4 text-right">Stock Value</th>
                     <th className="py-4 px-4 text-center">Status</th>
                     <th className="py-4 px-6 text-center">Actions</th>
                   </tr>
@@ -294,8 +310,8 @@ export default function ProductsPage() {
                       <td className="py-3.5 px-4 font-mono text-slate-400">{prod.sku}</td>
                       <td className="py-3.5 px-4">{prod.category}</td>
                       <td className="py-3.5 px-4 text-right font-semibold">{prod.quantity}</td>
-                      <td className="py-3.5 px-4 text-right">${prod.purchasePrice.toFixed(2)}</td>
-                      <td className="py-3.5 px-4 text-right">${prod.sellingPrice.toFixed(2)}</td>
+                      <td className="py-3.5 px-4 text-right">₹{prod.purchasePrice.toFixed(2)}</td>
+                      <td className="py-3.5 px-4 text-right">₹{(prod.quantity * prod.purchasePrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                       <td className="py-3.5 px-4 text-center">
                         <Badge
                           variant={
@@ -451,7 +467,7 @@ export default function ProductsPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label className="text-slate-200">Purchase Price ($)</Label>
+                    <Label className="text-slate-200">Purchase Price (₹)</Label>
                     <Input
                       type="number"
                       step="0.01"
@@ -459,17 +475,6 @@ export default function ProductsPage() {
                       {...register('purchasePrice', { valueAsNumber: true })}
                     />
                     {errors.purchasePrice && <p className="text-xs text-red-400">{errors.purchasePrice.message}</p>}
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label className="text-slate-200">Selling Price ($)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      className="border-slate-700 bg-slate-950 text-white"
-                      {...register('sellingPrice', { valueAsNumber: true })}
-                    />
-                    {errors.sellingPrice && <p className="text-xs text-red-400">{errors.sellingPrice.message}</p>}
                   </div>
                 </div>
 
@@ -546,16 +551,12 @@ export default function ProductsPage() {
                 </div>
                 <div className="flex justify-between border-b border-slate-800/60 pb-2">
                   <span className="text-slate-400 text-xs font-semibold">Purchase Price</span>
-                  <span className="text-white">${viewingProduct.purchasePrice.toFixed(2)}</span>
+                  <span className="text-white">₹{viewingProduct.purchasePrice.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between border-b border-slate-800/60 pb-2">
-                  <span className="text-slate-400 text-xs font-semibold">Selling Price</span>
-                  <span className="text-white">${viewingProduct.sellingPrice.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between border-b border-slate-800/60 pb-2">
-                  <span className="text-slate-400 text-xs font-semibold">Inventory Valuation</span>
+                  <span className="text-slate-400 text-xs font-semibold">Stock Value</span>
                   <span className="text-emerald-400 font-bold">
-                    ${(viewingProduct.quantity * viewingProduct.sellingPrice).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    ₹{(viewingProduct.quantity * viewingProduct.purchasePrice).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex justify-between border-b border-slate-800/60 pb-2">

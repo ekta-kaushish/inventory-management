@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import Link from 'next/navigation';
+import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/authStore';
 import { showToast } from '@/store/toastStore';
@@ -71,7 +71,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
             const isActive = pathname === item.href;
             const Icon = item.icon;
             return (
-              <a
+              <Link
                 key={item.href}
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
@@ -82,7 +82,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
               >
                 <Icon className={`h-4.5 w-4.5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
                 {item.label}
-              </a>
+              </Link>
             );
           })}
         </nav>
@@ -133,7 +133,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                 const isActive = pathname === item.href;
                 const Icon = item.icon;
                 return (
-                  <a
+                  <Link
                     key={item.href}
                     href={item.href}
                     onClick={() => setMobileMenuOpen(false)}
@@ -145,7 +145,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                   >
                     <Icon className="h-5 w-5" />
                     {item.label}
-                  </a>
+                  </Link>
                 );
               })}
             </nav>

@@ -26,10 +26,9 @@ export class ReportsService {
         { header: 'Company', key: 'company', width: 20 },
         { header: 'Category', key: 'category', width: 15 },
         { header: 'Quantity', key: 'quantity', width: 12 },
-        { header: 'Purchase Price ($)', key: 'purchasePrice', width: 18 },
-        { header: 'Selling Price ($)', key: 'sellingPrice', width: 18 },
+        { header: 'Purchase Price (₹)', key: 'purchasePrice', width: 18 },
         { header: 'Min Stock Level', key: 'minStock', width: 15 },
-        { header: 'Inventory Value ($)', key: 'value', width: 20 },
+        { header: 'Stock Value (₹)', key: 'value', width: 20 },
         { header: 'Status', key: 'status', width: 15 },
       ];
 
@@ -45,7 +44,7 @@ export class ReportsService {
       let totalQty = 0;
 
       products.forEach((p) => {
-        const value = p.quantity * p.sellingPrice;
+        const value = p.quantity * p.purchasePrice;
         totalValuation += value;
         totalQty += p.quantity;
 
@@ -56,7 +55,6 @@ export class ReportsService {
           category: p.category,
           quantity: p.quantity,
           purchasePrice: p.purchasePrice,
-          sellingPrice: p.sellingPrice,
           minStock: p.minimumStockLevel,
           value: value,
           status: p.status,
@@ -75,9 +73,8 @@ export class ReportsService {
       // Formatting numbers
       worksheet.eachRow((row, rowNumber) => {
         if (rowNumber > 1) {
-          row.getCell('purchasePrice').numFmt = '$#,##0.00';
-          row.getCell('sellingPrice').numFmt = '$#,##0.00';
-          row.getCell('value').numFmt = '$#,##0.00';
+          row.getCell('purchasePrice').numFmt = '₹#,##0.00';
+          row.getCell('value').numFmt = '₹#,##0.00';
           row.getCell('quantity').numFmt = '#,##0';
         }
       });
@@ -109,14 +106,14 @@ export class ReportsService {
 
       // Inventory Summary Blocks
       const totalQty = products.reduce((sum, p) => sum + p.quantity, 0);
-      const totalValuation = products.reduce((sum, p) => sum + p.quantity * p.sellingPrice, 0);
+      const totalValuation = products.reduce((sum, p) => sum + p.quantity * p.purchasePrice, 0);
       const lowStockCount = products.filter((p) => p.status === 'Low Stock').length;
       const outOfStockCount = products.filter((p) => p.status === 'Out Of Stock').length;
 
       doc.fillColor('#000000').fontSize(12).text('Inventory Summary:', { underline: true });
       doc.fontSize(10).text(`• Total Products: ${products.length}`);
       doc.text(`• Total Stock Volume: ${totalQty} units`);
-      doc.text(`• Total Valuation (at Selling Price): $${totalValuation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
+      doc.text(`• Total Stock Value (at Cost Price): Rs. ${totalValuation.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`);
       doc.text(`• Alert Statuses: ${lowStockCount} Low Stock, ${outOfStockCount} Out Of Stock`);
       doc.moveDown(2);
 
@@ -131,7 +128,7 @@ export class ReportsService {
         doc.text('SKU', startX + 160, startY + 5, { width: 90 });
         doc.text('Category', startX + 255, startY + 5, { width: 80 });
         doc.text('Qty', startX + 340, startY + 5, { width: 40, align: 'right' });
-        doc.text('Sell Price', startX + 385, startY + 5, { width: 60, align: 'right' });
+        doc.text('Stock Value', startX + 385, startY + 5, { width: 60, align: 'right' });
         doc.text('Status', startX + 450, startY + 5, { width: 80, align: 'right' });
         startY += 20;
       };
@@ -159,7 +156,7 @@ export class ReportsService {
         doc.text(p.sku, startX + 160, startY + 4, { width: 90 });
         doc.text(p.category.substring(0, 14), startX + 255, startY + 4, { width: 80 });
         doc.text(p.quantity.toString(), startX + 340, startY + 4, { width: 40, align: 'right' });
-        doc.text(`$${p.sellingPrice.toFixed(2)}`, startX + 385, startY + 4, { width: 60, align: 'right' });
+        doc.text(`Rs. ${(p.quantity * p.purchasePrice).toFixed(2)}`, startX + 385, startY + 4, { width: 60, align: 'right' });
 
         // Color code status in PDF
         if (p.status === 'Out Of Stock') doc.fillColor('#EF4444');

@@ -12,80 +12,82 @@ export class DashboardService {
   ) {}
 
   async getDashboardStats() {
-    // 1. KPI Counts
-    const totalProducts = await this.productModel.countDocuments().exec();
-    const lowStockProducts = await this.productModel.countDocuments({ status: 'Low Stock' }).exec();
-    const outOfStockProducts = await this.productModel.countDocuments({ status: 'Out Of Stock' }).exec();
+    const startOfPeriod = new Date();
+    startOfPeriod.setMonth(startOfPeriod.getMonth() - 5);
+    startOfPeriod.setDate(1);
+    startOfPeriod.setHours(0, 0, 0, 0);
 
-    const stockStats = await this.productModel.aggregate([
-      {
-        $group: {
-          _id: null,
-          totalQuantity: { $sum: '$quantity' },
-          totalValue: { $sum: { $multiply: ['$quantity', '$sellingPrice'] } },
+    const [
+      totalProducts,
+      lowStockProducts,
+      outOfStockProducts,
+      stockStats,
+      statusStats,
+      categoryStats,
+      movementStats,
+    ] = await Promise.all([
+      this.productModel.countDocuments().exec(),
+      this.productModel.countDocuments({ status: 'Low Stock' }).exec(),
+      this.productModel.countDocuments({ status: 'Out Of Stock' }).exec(),
+      this.productModel.aggregate([
+        {
+          $group: {
+            _id: null,
+            totalQuantity: { $sum: '$quantity' },
+            totalValue: { $sum: { $multiply: ['$quantity', '$purchasePrice'] } },
+          },
         },
-      },
-    ]).exec();
+      ]).exec(),
+      this.productModel.aggregate([
+        {
+          $group: {
+            _id: '$status',
+            value: { $sum: 1 },
+          },
+        },
+      ]).exec(),
+      this.productModel.aggregate([
+        {
+          $group: {
+            _id: '$category',
+            value: { $sum: 1 },
+            quantity: { $sum: '$quantity' },
+          },
+        },
+        { $sort: { quantity: -1 } },
+      ]).exec(),
+      this.historyModel.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: startOfPeriod },
+          },
+        },
+        {
+          $group: {
+            _id: {
+              year: { $year: '$createdAt' },
+              month: { $month: '$createdAt' },
+              type: '$transactionType',
+            },
+            total: { $sum: '$quantity' },
+          },
+        },
+      ]).exec(),
+    ]);
 
     const totalStockQuantity = stockStats[0]?.totalQuantity || 0;
     const totalInventoryValue = stockStats[0]?.totalValue || 0;
-
-    // 2. Inventory Overview Chart (Status distribution)
-    const statusStats = await this.productModel.aggregate([
-      {
-        $group: {
-          _id: '$status',
-          value: { $sum: 1 },
-        },
-      },
-    ]).exec();
 
     const inventoryOverview = statusStats.map((item) => ({
       name: item._id,
       value: item.value,
     }));
 
-    // 3. Product Categories Chart
-    const categoryStats = await this.productModel.aggregate([
-      {
-        $group: {
-          _id: '$category',
-          value: { $sum: 1 },
-          quantity: { $sum: '$quantity' },
-        },
-      },
-      { $sort: { quantity: -1 } },
-    ]).exec();
-
     const productCategories = categoryStats.map((item) => ({
       name: item._id,
       productsCount: item.value,
       stockQty: item.quantity,
     }));
-
-    // 4. Monthly Stock Movement Chart (Last 6 Months)
-    const startOfPeriod = new Date();
-    startOfPeriod.setMonth(startOfPeriod.getMonth() - 5);
-    startOfPeriod.setDate(1);
-    startOfPeriod.setHours(0, 0, 0, 0);
-
-    const movementStats = await this.historyModel.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: startOfPeriod },
-        },
-      },
-      {
-        $group: {
-          _id: {
-            year: { $year: '$createdAt' },
-            month: { $month: '$createdAt' },
-            type: '$transactionType',
-          },
-          total: { $sum: '$quantity' },
-        },
-      },
-    ]).exec();
 
     // Reconstruct list of last 6 months for a clean, zero-filled series
     const monthsName = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];

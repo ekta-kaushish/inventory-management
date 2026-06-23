@@ -23,9 +23,6 @@ export class Product {
   @Prop({ required: true, min: 0 })
   purchasePrice!: number;
 
-  @Prop({ required: true, min: 0 })
-  sellingPrice!: number;
-
   @Prop({ required: true, min: 0, default: 5 })
   minimumStockLevel!: number;
 

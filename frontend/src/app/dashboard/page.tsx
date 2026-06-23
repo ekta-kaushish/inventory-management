@@ -108,7 +108,7 @@ export default function DashboardPage() {
     },
     {
       title: 'Inventory Value',
-      value: `$${kpis.totalInventoryValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+      value: `₹${kpis.totalInventoryValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
       desc: 'Cumulative catalog asset value',
       icon: CircleDollarSign,
       color: 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10',
