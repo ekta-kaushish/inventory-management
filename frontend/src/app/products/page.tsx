@@ -32,7 +32,7 @@ const productFormSchema = z.object({
   company: z.string().min(1, { message: 'Company is required' }),
   category: z.string().min(1, { message: 'Category is required' }),
   purchasePrice: z.number().min(0, { message: 'Cannot be negative' }),
-  discountPercentage: z.number().min(0, { message: 'Cannot be negative' }).max(100, { message: 'Cannot exceed 100%' }).default(0),
+  discountPercentage: z.number().min(0, { message: 'Cannot be negative' }).max(100, { message: 'Cannot exceed 100%' }),
   minimumStockLevel: z.number().min(0, { message: 'Cannot be negative' }),
   description: z.string().optional(),
 });
