@@ -63,6 +63,7 @@ export class ProductsService {
     if (updateProductDto.company !== undefined) product.company = updateProductDto.company;
     if (updateProductDto.category !== undefined) product.category = updateProductDto.category;
     if (updateProductDto.purchasePrice !== undefined) product.purchasePrice = updateProductDto.purchasePrice;
+    if (updateProductDto.discountPercentage !== undefined) product.discountPercentage = updateProductDto.discountPercentage;
     if (updateProductDto.description !== undefined) product.description = updateProductDto.description;
 
     if (updateProductDto.quantity !== undefined) {

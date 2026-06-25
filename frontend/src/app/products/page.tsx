@@ -32,6 +32,7 @@ const productFormSchema = z.object({
   company: z.string().min(1, { message: 'Company is required' }),
   category: z.string().min(1, { message: 'Category is required' }),
   purchasePrice: z.number().min(0, { message: 'Cannot be negative' }),
+  discountPercentage: z.number().min(0, { message: 'Cannot be negative' }).max(100, { message: 'Cannot exceed 100%' }).default(0),
   minimumStockLevel: z.number().min(0, { message: 'Cannot be negative' }),
   description: z.string().optional(),
 });
@@ -125,6 +126,7 @@ export default function ProductsPage() {
       company: '',
       category: '',
       purchasePrice: 0,
+      discountPercentage: 0,
       minimumStockLevel: 5,
       description: '',
     });
@@ -138,6 +140,7 @@ export default function ProductsPage() {
     setValue('company', product.company);
     setValue('category', product.category);
     setValue('purchasePrice', product.purchasePrice);
+    setValue('discountPercentage', product.discountPercentage ?? 0);
     setValue('minimumStockLevel', product.minimumStockLevel);
     setValue('description', product.description || '');
     setFormModalOpen(true);
@@ -171,6 +174,7 @@ export default function ProductsPage() {
           company: '',
           category: '',
           purchasePrice: 0,
+          discountPercentage: 0,
           minimumStockLevel: 5,
           description: '',
         });
@@ -293,6 +297,7 @@ export default function ProductsPage() {
                     <th className="py-4 px-4">Category</th>
                     <th className="py-4 px-4 text-right">Qty</th>
                     <th className="py-4 px-4 text-right">Cost Price</th>
+                    <th className="py-4 px-4 text-right">Discount</th>
                     <th className="py-4 px-4 text-right">Stock Value</th>
                     <th className="py-4 px-4 text-center">Status</th>
                     <th className="py-4 px-6 text-center">Actions</th>
@@ -311,7 +316,8 @@ export default function ProductsPage() {
                       <td className="py-3.5 px-4">{prod.category}</td>
                       <td className="py-3.5 px-4 text-right font-semibold">{prod.quantity}</td>
                       <td className="py-3.5 px-4 text-right">₹{prod.purchasePrice.toFixed(2)}</td>
-                      <td className="py-3.5 px-4 text-right">₹{(prod.quantity * prod.purchasePrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      <td className="py-3.5 px-4 text-right font-mono text-amber-400">{prod.discountPercentage || 0}%</td>
+                      <td className="py-3.5 px-4 text-right">₹{(prod.quantity * prod.purchasePrice * (1 - (prod.discountPercentage || 0) / 100)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                       <td className="py-3.5 px-4 text-center">
                         <Badge
                           variant={
@@ -476,6 +482,18 @@ export default function ProductsPage() {
                     />
                     {errors.purchasePrice && <p className="text-xs text-red-400">{errors.purchasePrice.message}</p>}
                   </div>
+
+                  <div className="space-y-1.5">
+                    <Label className="text-slate-200">Discount (%)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      className="border-slate-700 bg-slate-950 text-white"
+                      {...register('discountPercentage', { valueAsNumber: true })}
+                    />
+                    {errors.discountPercentage && <p className="text-xs text-red-400">{errors.discountPercentage.message}</p>}
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">
@@ -549,14 +567,18 @@ export default function ProductsPage() {
                   <span className="text-slate-400 text-xs font-semibold">Min Stock Alert Level</span>
                   <span className="text-white font-semibold">{viewingProduct.minimumStockLevel} units</span>
                 </div>
-                <div className="flex justify-between border-b border-slate-800/60 pb-2">
+                 <div className="flex justify-between border-b border-slate-800/60 pb-2">
                   <span className="text-slate-400 text-xs font-semibold">Purchase Price</span>
                   <span className="text-white">₹{viewingProduct.purchasePrice.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between border-b border-slate-800/60 pb-2">
+                  <span className="text-slate-400 text-xs font-semibold">Discount</span>
+                  <span className="text-amber-400 font-semibold">{viewingProduct.discountPercentage || 0}%</span>
+                </div>
+                <div className="flex justify-between border-b border-slate-800/60 pb-2">
                   <span className="text-slate-400 text-xs font-semibold">Stock Value</span>
                   <span className="text-emerald-400 font-bold">
-                    ₹{(viewingProduct.quantity * viewingProduct.purchasePrice).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    ₹{(viewingProduct.quantity * viewingProduct.purchasePrice * (1 - (viewingProduct.discountPercentage || 0) / 100)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="flex justify-between border-b border-slate-800/60 pb-2">

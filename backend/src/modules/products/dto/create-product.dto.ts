@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsNumber, Min, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, Min, IsOptional, Max } from 'class-validator';
 
 export class CreateProductDto {
   @ApiProperty({ example: 'iPhone 15 Pro', description: 'Name of the product' })
@@ -33,6 +33,13 @@ export class CreateProductDto {
   @IsNumber()
   @Min(0, { message: 'Purchase price cannot be negative' })
   purchasePrice!: number;
+
+  @ApiProperty({ example: 10, description: 'Discount percentage on purchase price', default: 0, required: false })
+  @IsOptional()
+  @IsNumber()
+  @Min(0, { message: 'Discount percentage cannot be negative' })
+  @Max(100, { message: 'Discount percentage cannot exceed 100' })
+  discountPercentage?: number;
 
   @ApiProperty({ example: 5, description: 'Minimum inventory level before warning' })
   @IsNotEmpty({ message: 'Minimum stock level is required' })

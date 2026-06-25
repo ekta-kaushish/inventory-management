@@ -34,7 +34,15 @@ export class DashboardService {
           $group: {
             _id: null,
             totalQuantity: { $sum: '$quantity' },
-            totalValue: { $sum: { $multiply: ['$quantity', '$purchasePrice'] } },
+            totalValue: {
+              $sum: {
+                $multiply: [
+                  '$quantity',
+                  '$purchasePrice',
+                  { $subtract: [1, { $divide: [{ $ifNull: ['$discountPercentage', 0] }, 100] }] }
+                ]
+              }
+            },
           },
         },
       ]).exec(),

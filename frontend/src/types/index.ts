@@ -13,6 +13,7 @@ export interface Product {
   category: string;
   quantity: number;
   purchasePrice: number;
+  discountPercentage?: number;
   minimumStockLevel: number;
   description?: string;
   status: 'In Stock' | 'Low Stock' | 'Out Of Stock';
