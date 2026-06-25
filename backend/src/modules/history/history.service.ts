@@ -60,7 +60,8 @@ export class HistoryService {
     }
 
     if (search) {
-      const regex = new RegExp(search.trim(), 'i');
+      const escapedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(escapedSearch, 'i');
       
       // Find matching products
       const products = await this.productModel.find({

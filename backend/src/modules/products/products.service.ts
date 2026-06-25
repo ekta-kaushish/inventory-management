@@ -98,7 +98,8 @@ export class ProductsService {
     const query: any = {};
 
     if (search) {
-      const regex = new RegExp(search.trim(), 'i');
+      const escapedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(escapedSearch, 'i');
       query.$or = [
         { productName: regex },
         { sku: regex },

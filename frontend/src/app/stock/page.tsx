@@ -49,7 +49,7 @@ export default function StockActionsPage() {
     setSearching(true);
     try {
       const response = await api.get<PaginatedResponse<Product>>('/products', {
-        params: { search: searchQuery || undefined, limit: 10 },
+        params: { search: searchQuery || undefined, limit: 200 },
       });
       setSearchResults(response.data.items);
     } catch (e) {
@@ -81,7 +81,7 @@ export default function StockActionsPage() {
 
       const response = await api.post(endpoint, payload);
       const updatedProduct = response.data;
-      
+
       showToast.success(
         `Stock ${actionType === 'IN' ? 'added' : 'reduced'} successfully! New Qty: ${updatedProduct.quantity}`
       );
@@ -196,11 +196,10 @@ export default function StockActionsPage() {
                     <button
                       type="button"
                       onClick={() => setActionType('IN')}
-                      className={`flex items-center justify-center gap-2 p-3.5 rounded-lg border font-semibold transition cursor-pointer ${
-                        actionType === 'IN'
+                      className={`flex items-center justify-center gap-2 p-3.5 rounded-lg border font-semibold transition cursor-pointer ${actionType === 'IN'
                           ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400'
                           : 'border-slate-800 bg-slate-900/20 text-slate-400 hover:text-slate-200'
-                      }`}
+                        }`}
                       disabled={submitting}
                     >
                       <ArrowUpRight className="h-4.5 w-4.5" />
@@ -209,11 +208,10 @@ export default function StockActionsPage() {
                     <button
                       type="button"
                       onClick={() => setActionType('OUT')}
-                      className={`flex items-center justify-center gap-2 p-3.5 rounded-lg border font-semibold transition cursor-pointer ${
-                        actionType === 'OUT'
+                      className={`flex items-center justify-center gap-2 p-3.5 rounded-lg border font-semibold transition cursor-pointer ${actionType === 'OUT'
                           ? 'border-red-500 bg-red-500/10 text-red-400'
                           : 'border-slate-800 bg-slate-900/20 text-slate-400 hover:text-slate-200'
-                      }`}
+                        }`}
                       disabled={submitting}
                     >
                       <ArrowDownRight className="h-4.5 w-4.5" />
@@ -252,9 +250,8 @@ export default function StockActionsPage() {
                 <Button
                   type="submit"
                   disabled={submitting || !selectedProductId}
-                  className={`w-full font-semibold cursor-pointer ${
-                    actionType === 'IN' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-red-600 hover:bg-red-700'
-                  } text-white`}
+                  className={`w-full font-semibold cursor-pointer ${actionType === 'IN' ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-red-600 hover:bg-red-700'
+                    } text-white`}
                 >
                   {submitting ? (
                     <div className="flex items-center justify-center gap-2">
@@ -316,8 +313,8 @@ export default function StockActionsPage() {
                           selectedProduct.status === 'In Stock'
                             ? 'success'
                             : selectedProduct.status === 'Low Stock'
-                            ? 'warning'
-                            : 'danger'
+                              ? 'warning'
+                              : 'danger'
                         }
                       >
                         {selectedProduct.status}
